@@ -13,6 +13,7 @@ Most plugins have a multithreaded Folia compatibility setting, I'm building an A
 > - ⚙️**EtheriumMC 1.21.7** – dev builds
 > - ✔️**EtheriumMC 1.21.11** – stable version
 > - ✔️**EtheriumMC 26.1.2** – stable version
+> - ✔️**EtheriumMC 26.2** – stable version
 > - ⚙️**EtheriumMC 26.3** – dev builds
 
 # ⚙️ Features
