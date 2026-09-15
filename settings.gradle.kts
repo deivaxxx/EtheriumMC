@@ -1,53 +1,96 @@
-import java.util.Locale
-
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        maven("https://repo.papermc.io/repository/maven-public/")
-    }
-}
+import io.papermc.paperweight.checkstyle.PaperCheckstyleExt
+import io.papermc.paperweight.checkstyle.tasks.PaperCheckstyleTask
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+    id("io.papermc.paperweight.core") version "2.0.0-beta.23" apply false
 }
 
-if (!file(".git").exists()) {
-    val errorText = """
-        
-        =====================[ ERROR ]=====================
-         The EtheriumMC project directory is not a properly cloned Git repository.
-         
-         In order to build EtheriumMC from source you must clone
-         the EtheriumMC repository using Git, not download a code
-         zip from GitHub.
-         
-         Built EtheriumMC jars are available for download at
-         https://github.com/deivaxxx/EtheriumMC/ or 
-         at https://github.com/deivaxxx/EtheriumMC/
-         
-         See https://bxteam.org/docs/divinemc/development/contributing
-         for further information on building and modifying EtheriumMC.
-        ===================================================
-    """.trimIndent()
-    error(errorText)
-}
-
-rootProject.name = "EtheriumMC"
-
-for (name in listOf("etheriumMC-api", "nvfolia-server", "etheriumMC-checkstyle")) {
-    val projName = name.lowercase(Locale.ENGLISH)
-    include(projName)
-    findProject(":$projName")!!.projectDir = file(name)
-}
-
-gradle.lifecycle.beforeProject {
-    val mcVersion = providers.gradleProperty("mcVersion").get().trim()
-    val divinemcChannel = providers.gradleProperty("channel").get().trim()
-    val divinemcBuildNumber = providers.environmentVariable("BUILD_NUMBER").orNull?.trim()?.toInt()
-    val versionString = if (divinemcBuildNumber == null) {
-        "$mcVersion.local-SNAPSHOT"
-    } else {
-        "$mcVersion.build.$divinemcBuildNumber-${divinemcChannel.lowercase()}"
+subprojects {
+    apply {
+        plugin("java-library")
+        plugin("maven-publish")
     }
-    version = versionString
+
+    extensions.configure<JavaPluginExtension> {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    val tempDisabled = setOf("paper-server", "paper-generator", "test-plugin")
+
+    if (name !in tempDisabled) {
+        apply { plugin("io.papermc.paperweight.paper-checkstyle") }
+        extensions.configure<PaperCheckstyleExt> {
+            typeUseAnnotationsFile.set(rootProject.layout.projectDirectory.file(".checkstyle/type_use_annotations.txt"))
+        }
+
+        /*tasks.withType<PaperCheckstyleTask>().configureEach {
+            configDirectory = rootProject.layout.projectDirectory.dir(".checkstyle")
+            // configFile = layout.projectDirectory.file(".checkstyle/checkstyle.xml").asFile // use the base file if not overwritten
+            maxHeapSize = "2g"
+            reports {
+                xml.required = true
+                html.required = true
+            }
+        }*/
+
+        dependencies {
+            "checkstyle"(project(":paper-checkstyle"))
+        }
+    }
+}
+
+val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
+
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = Charsets.UTF_8.name()
+        options.release = 25
+        options.isFork = true
+        options.compilerArgs.addAll(listOf("-Xlint:-deprecation", "-Xlint:-removal"))
+    }
+    tasks.withType<Javadoc>().configureEach {
+        options.encoding = Charsets.UTF_8.name()
+    }
+    tasks.withType<ProcessResources>().configureEach {
+        filteringCharset = Charsets.UTF_8.name()
+    }
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            showStackTraces = true
+            exceptionFormat = TestExceptionFormat.FULL
+            events(TestLogEvent.STANDARD_OUT)
+        }
+    }
+
+    repositories {
+        mavenCentral()
+        maven(paperMavenPublicUrl)
+    }
+
+    extensions.configure<PublishingExtension> {
+        repositories {
+            maven("https://artifactory.papermc.io/artifactory/releases/") {
+                name = "paperReleases"
+                credentials(PasswordCredentials::class)
+            }
+        }
+    }
+}
+
+tasks.register("printMinecraftVersion") {
+    val mcVersion = providers.gradleProperty("mcVersion")
+    doLast {
+        println(mcVersion.get().trim())
+    }
+}
+
+tasks.register("printPaperVersion") {
+    val paperVersion = provider { project.version }
+    doLast {
+        println(paperVersion.get())
+    }
 }
