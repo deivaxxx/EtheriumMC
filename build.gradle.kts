@@ -1,82 +1,17 @@
+import io.papermc.paperweight.checkstyle.PaperCheckstyleExt
+import io.papermc.paperweight.checkstyle.tasks.PaperCheckstyleTask
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
-    java
-    id("io.papermc.paperweight.patcher") version "2.0.0-SNAPSHOT"
-}
-
-val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
-
-paperweight {
-    upstreams.register("purpur") {
-        repo = github("PurpurMC", "Purpur")
-        ref = providers.gradleProperty("purpurRef")
-
-        patchFile {
-            path = "purpur-server/build.gradle.kts"
-            outputFile = file("divinemc-server/build.gradle.kts")
-            patchFile = file("divinemc-server/build.gradle.kts.patch")
-        }
-        patchFile {
-            path = "purpur-api/build.gradle.kts"
-            outputFile = file("divinemc-api/build.gradle.kts")
-            patchFile = file("divinemc-api/build.gradle.kts.patch")
-        }
-        patchFile {
-            path = "purpur-checkstyle/build.gradle.kts"
-            outputFile = file("divinemc-checkstyle/build.gradle.kts")
-            patchFile = file("divinemc-checkstyle/build.gradle.kts.patch")
-        }
-        patchRepo("paperApi") {
-            upstreamPath = "paper-api"
-            patchesDir = file("divinemc-api/paper-patches")
-            outputDir = file("paper-api")
-        }
-        patchRepo("paperCheckstyle") {
-            upstreamPath = "paper-checkstyle"
-            excludes = listOf("build.gradle.kts")
-            patchesDir = file("divinemc-checkstyle/paper-patches")
-            outputDir = file("paper-checkstyle")
-        }
-        patchRepo("paperCheckstyleConfig") {
-            upstreamPath = ".checkstyle"
-            patchesDir = file("divinemc-checkstyle/config-patches")
-            outputDir = file(".checkstyle")
-        }
-        patchDir("purpurApi") {
-            upstreamPath = "purpur-api"
-            excludes = listOf("build.gradle.kts", "build.gradle.kts.patch", "paper-patches")
-            patchesDir = file("divinemc-api/purpur-patches")
-            outputDir = file("purpur-api")
-        }
-    }
-}
-
-allprojects {
-    apply(plugin = "java")
-    apply(plugin = "maven-publish")
-
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(25)
-        }
-    }
-
-    tasks.compileJava {
-        options.compilerArgs.add("-Xlint:-deprecation")
-        options.isWarnings = false
-    }
-
-    tasks.withType(JavaCompile::class.java).configureEach {
-        options.isFork = true
-        options.forkOptions.memoryMaximumSize = "4G"
-    }
+    id("io.papermc.paperweight.core") version "2.0.0-beta.23" apply false
 }
 
 subprojects {
-    apply(plugin = "java-library")
-    apply(plugin = "maven-publish")
+    apply {
+        plugin("java-library")
+        plugin("maven-publish")
+    }
 
     extensions.configure<JavaPluginExtension> {
         toolchain {
@@ -84,18 +19,46 @@ subprojects {
         }
     }
 
-    tasks.withType<JavaCompile> {
+    val tempDisabled = setOf("etheriummc-server", "etheriummc-generator", "test-plugin")
+
+    if (name !in tempDisabled) {
+        apply { plugin("io.papermc.paperweight.etheriummc-checkstyle") }
+        extensions.configure<PaperCheckstyleExt> {
+            typeUseAnnotationsFile.set(rootProject.layout.projectDirectory.file(".checkstyle/type_use_annotations.txt"))
+        }
+
+        /*tasks.withType<PaperCheckstyleTask>().configureEach {
+            configDirectory = rootProject.layout.projectDirectory.dir(".checkstyle")
+            // configFile = layout.projectDirectory.file(".checkstyle/checkstyle.xml").asFile // use the base file if not overwritten
+            maxHeapSize = "2g"
+            reports {
+                xml.required = true
+                html.required = true
+            }
+        }*/
+
+        dependencies {
+            "checkstyle"(project(":etheriummc-checkstyle"))
+        }
+    }
+}
+
+val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
+
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
         options.encoding = Charsets.UTF_8.name()
         options.release = 25
         options.isFork = true
+        options.compilerArgs.addAll(listOf("-Xlint:-deprecation", "-Xlint:-removal"))
     }
-    tasks.withType<Javadoc> {
+    tasks.withType<Javadoc>().configureEach {
         options.encoding = Charsets.UTF_8.name()
     }
-    tasks.withType<ProcessResources> {
+    tasks.withType<ProcessResources>().configureEach {
         filteringCharset = Charsets.UTF_8.name()
     }
-    tasks.withType<Test> {
+    tasks.withType<Test>().configureEach {
         testLogging {
             showStackTraces = true
             exceptionFormat = TestExceptionFormat.FULL
@@ -106,23 +69,28 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
-        maven("https://jitpack.io")
     }
 
     extensions.configure<PublishingExtension> {
         repositories {
-            maven("https://repo.bxteam.org/snapshots") {
-                name = "divinemc"
-
-                credentials.username = System.getenv("REPO_USERNAME")
-                credentials.password = System.getenv("REPO_PASSWORD")
+            maven("https://artifactory.papermc.io/artifactory/releases/") {
+                name = "paperReleases"
+                credentials(PasswordCredentials::class)
             }
         }
     }
 }
 
 tasks.register("printMinecraftVersion") {
+    val mcVersion = providers.gradleProperty("mcVersion")
     doLast {
-        println(providers.gradleProperty("mcVersion").get().trim())
+        println(mcVersion.get().trim())
+    }
+}
+
+tasks.register("printPaperVersion") {
+    val paperVersion = provider { project.version }
+    doLast {
+        println(paperVersion.get())
     }
 }
