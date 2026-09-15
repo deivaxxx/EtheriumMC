@@ -1,14 +1,19 @@
 <img width="1672" height="941" alt="EtheriumMC png" src="https://github.com/user-attachments/assets/ebcbd060-7fd1-474b-84cc-9ea3df71e00d" />
 
 
-# EtheriumMC 🔮 1.21.5 - 26.2 Spigot Plugins Support
+# EtheriumMC 🔮 1.21.5 - 26.3 Spigot Plugins Support
 A fork of Folia that supports the Bukkit API and 80% of Spigot/Paper plugins
 
 ## I am not an official developer of Folia core. I am just creating a fork of it that will help run 90% of plugins on a multithreaded core.
 Please! The EtheriumMC is in effective development, and when using it, save a backup of the world
 
 Most plugins have a multithreaded Folia compatibility setting, I'm building an API that runs entirely on Paper/Spigot but adds all of Folia's functionality
-# The core is in Stable 26.2!
+## Versions:
+> - ✔️**EtheriumMC 1.21.5** – stable version
+> - ⚙️**EtheriumMC 1.21.7** – dev builds
+> - ✔️**EtheriumMC 1.21.11** – stable version
+> - ✔️**EtheriumMC 26.1.2** – stable version
+> - ⚙️**EtheriumMC 26.3** – dev builds
 
 # ⚙️ Features
 - **Full availability of Bukkit/Paper plugins**
