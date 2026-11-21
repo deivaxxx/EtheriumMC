@@ -4,16 +4,16 @@
       * The brand id for Paper.
       */
      Key BRAND_PAPER_ID = Key.key("papermc", "paper");
-+    // Canvas start - Rebrand
++    // EtheriumMC start - Rebrand
 +    /**
 +     * The brand id for Folia.
 +     */
 +    Key BRAND_FOLIA_ID = Key.key("papermc", "folia");
 +    /**
-+     * The brand id for Canvas.
++     * The brand id for EtheriumMC.
 +     */
-+    Key BRAND_CANVAS_ID = Key.key("canvasmc", "canvas");
-+    // Canvas end
++    Key BRAND_CANVAS_ID = Key.key("etheriummc", "etheriummc");
++    // EtheriumMC end
  
      /**
       * Gets the {@code ServerBuildInfo}.
