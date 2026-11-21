@@ -10,11 +10,12 @@ Please! The EtheriumMC is in effective development, and when using it, save a ba
 Most plugins have a multithreaded Folia compatibility setting, I'm building an API that runs entirely on Paper/Spigot but adds all of Folia's functionality
 ## Versions:
 > - ✔️**EtheriumMC 1.21.5** – stable version
-> - ⚙️**EtheriumMC 1.21.7** – dev builds
 > - ✔️**EtheriumMC 1.21.11** – stable version
 > - ✔️**EtheriumMC 26.1.2** – stable version
 > - ✔️**EtheriumMC 26.2** – stable version
-> - ⚙️**EtheriumMC 26.3** – dev builds
+> - ✔️**EtheriumMC 26.3** – stable version
+
+> - ⚙️**EtheriumMC 26.3 Perfomace Folia core** – a new update is in the works
 
 # ⚙️ Features
 - **Full availability of Bukkit/Paper plugins**
